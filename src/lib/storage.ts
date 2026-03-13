@@ -1,6 +1,7 @@
 const AGE_KEY = "adipoli-age-verified";
 const TRIED_KEY = "adipoli-tried-drinks";
 const LIKED_KEY = "adipoli-liked-drinks";
+const SWIPE_HINT_DISMISSED_KEY = "adipoli-swipe-hint-dismissed";
 
 export function getAgeVerified(): boolean {
   return window.localStorage.getItem(AGE_KEY) === "true";
@@ -44,4 +45,12 @@ export function getLikedDrinks(): string[] {
 
 export function setLikedDrinks(drinkIds: string[]): void {
   window.localStorage.setItem(LIKED_KEY, JSON.stringify(drinkIds));
+}
+
+export function getSwipeHintDismissed(): boolean {
+  return window.localStorage.getItem(SWIPE_HINT_DISMISSED_KEY) === "true";
+}
+
+export function setSwipeHintDismissed(value: boolean): void {
+  window.localStorage.setItem(SWIPE_HINT_DISMISSED_KEY, String(value));
 }

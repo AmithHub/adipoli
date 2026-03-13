@@ -402,75 +402,52 @@ h3 {
 .drink-artwork {
   position: relative;
   min-height: 180px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
   overflow: hidden;
+  background: #0f0f11;
 }
 
-.art-glow {
+.drink-artwork-image,
+.drink-artwork-sheen {
   position: absolute;
-  inset: auto;
-  width: 140px;
-  height: 140px;
-  border-radius: 999px;
-  background: rgba(255, 248, 213, 0.18);
-  top: 18px;
-  filter: blur(18px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.drink-vessel {
-  position: relative;
-  width: 74px;
-  height: 132px;
-  border-radius: 18px 18px 22px 22px;
-  background: linear-gradient(180deg, rgba(26, 14, 8, 0.35), rgba(11, 10, 9, 0.8));
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: inset 0 0 30px rgba(255, 211, 135, 0.14);
-  margin-bottom: 20px;
+.drink-artwork-image {
+  object-fit: cover;
+  transform: scale(1.02);
 }
 
-.beer-artwork .drink-vessel {
-  width: 96px;
-  height: 120px;
-  border-radius: 18px 18px 28px 28px;
+.drink-artwork-sheen {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 22%),
+    linear-gradient(180deg, transparent 54%, rgba(0, 0, 0, 0.68) 100%);
+  pointer-events: none;
 }
 
-.drink-vessel-cap {
+.drink-artwork-chip {
   position: absolute;
-  top: -10px;
-  left: 20px;
-  width: 34px;
-  height: 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.beer-artwork .drink-vessel-cap {
   top: 12px;
-  left: 34px;
-  width: 28px;
-  height: 8px;
-}
-
-.drink-vessel-label {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 48px;
-  padding: 10px 6px;
-  border-radius: 14px;
-  text-align: center;
-  font-size: 0.68rem;
+  left: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(12, 12, 14, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff1cd;
+  font-size: 0.72rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: rgba(255, 243, 206, 0.82);
-  color: #3b2400;
+  text-transform: uppercase;
 }
 
 .art-caption {
   position: absolute;
+  z-index: 1;
   left: 12px;
   right: 12px;
   bottom: 12px;
@@ -675,26 +652,10 @@ h3 {
   min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
-.swipe-card-progress {
-  position: absolute;
+.swipe-card-media .drink-artwork-chip {
+  left: 50%;
   top: 18px;
-  right: 18px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 3px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: rgba(14, 14, 15, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.swipe-card-progress span {
-  font-weight: 700;
-}
-
-.swipe-card-progress small {
-  color: var(--muted);
+  transform: translateX(-50%);
 }
 
 .swipe-card-grabber {
@@ -705,7 +666,7 @@ h3 {
   position: absolute;
   top: 18px;
   left: 18px;
-  z-index: 2;
+  z-index: 5;
   width: 44px;
   height: 44px;
   border-radius: 999px;
@@ -713,6 +674,7 @@ h3 {
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 240, 240, 0.92);
   font-size: 1.25rem;
+  pointer-events: auto;
 }
 
 .swipe-like-button.liked {
@@ -842,22 +804,47 @@ h3 {
   z-index: 5;
 }
 
+.swipe-top-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  padding: 84px 18px 18px;
+  color: #fff6e4;
+}
+
+.swipe-top-info h2 {
+  font-size: 1.55rem;
+}
+
+.swipe-top-info .muted-line,
+.swipe-top-info p {
+  color: rgba(255, 246, 228, 0.84);
+}
+
 .swipe-body {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 24px 18px 22px;
+  padding: 18px 18px 22px;
   color: #fff6e4;
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
 }
 
-.swipe-body h2 {
-  font-size: 1.55rem;
+.swipe-body.expanded {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
-.swipe-body .muted-line,
-.swipe-body p {
+.swipe-body p,
+.swipe-body .muted-line {
   color: rgba(255, 246, 228, 0.84);
 }
 

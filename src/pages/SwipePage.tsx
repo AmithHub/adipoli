@@ -2,6 +2,7 @@ import type { MouseEvent, TouchEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DrinkArtwork } from "../components/DrinkArtwork";
 import { getAllDrinks } from "../services/drinkService";
+import { getSwipeHintDismissed, setSwipeHintDismissed } from "../lib/storage";
 import type { Drink } from "../types";
 
 interface SwipePageProps {
@@ -35,7 +36,11 @@ export function SwipePage({
   const candidates = useMemo(() => shuffleDrinks(getAllDrinks()), []);
   const feedRef = useRef<HTMLDivElement | null>(null);
   const lastTapRef = useRef(0);
+  const singleTapTimeoutRef = useRef<number | null>(null);
+  const suppressClickUntilRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [expandedDrinkId, setExpandedDrinkId] = useState<string | null>(null);
+  const [showTapHint, setShowTapHint] = useState(() => !getSwipeHintDismissed());
   const [feedback, setFeedback] = useState("");
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [gestureMode, setGestureMode] = useState<GestureMode>(null);
@@ -67,6 +72,18 @@ export function SwipePage({
     const timeout = window.setTimeout(() => setLikedPulseId(null), 400);
     return () => window.clearTimeout(timeout);
   }, [likedPulseId]);
+
+  useEffect(() => {
+    setExpandedDrinkId(null);
+  }, [activeIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (singleTapTimeoutRef.current) {
+        window.clearTimeout(singleTapTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function goToIndex(nextIndex: number) {
     const clamped = Math.max(0, Math.min(nextIndex, candidates.length - 1));
@@ -106,6 +123,25 @@ export function SwipePage({
       setLikeBurstId(drink.id);
     }
     setLikedPulseId(drink.id);
+  }
+
+  function scheduleToggleDetails(drinkId: string) {
+    if (singleTapTimeoutRef.current) {
+      window.clearTimeout(singleTapTimeoutRef.current);
+    }
+
+    singleTapTimeoutRef.current = window.setTimeout(() => {
+      toggleDetails(drinkId);
+      singleTapTimeoutRef.current = null;
+    }, 220);
+  }
+
+  function toggleDetails(drinkId: string) {
+    if (showTapHint) {
+      setShowTapHint(false);
+      setSwipeHintDismissed(true);
+    }
+    setExpandedDrinkId((current) => (current === drinkId ? null : drinkId));
   }
 
   function advanceCard(drink: Drink, direction: "left" | "right") {
@@ -204,6 +240,11 @@ export function SwipePage({
 
     const now = Date.now();
     if (now - lastTapRef.current < 260) {
+      if (singleTapTimeoutRef.current) {
+        window.clearTimeout(singleTapTimeoutRef.current);
+        singleTapTimeoutRef.current = null;
+      }
+      suppressClickUntilRef.current = now + 300;
       handleLike(drink);
     }
     lastTapRef.current = now;
@@ -240,10 +281,33 @@ export function SwipePage({
     }
   }
 
+  function handleCardClick(drink: Drink, event: MouseEvent<HTMLElement>) {
+    const target = event.target as HTMLElement;
+
+    if (target.closest("button")) {
+      return;
+    }
+
+    if (Date.now() < suppressClickUntilRef.current) {
+      return;
+    }
+
+    if (dragDrinkId === drink.id) {
+      return;
+    }
+
+    scheduleToggleDetails(drink.id);
+  }
+
   function handleFeedScroll() {
     const container = feedRef.current;
     if (!container) {
       return;
+    }
+
+    if (singleTapTimeoutRef.current) {
+      window.clearTimeout(singleTapTimeoutRef.current);
+      singleTapTimeoutRef.current = null;
     }
 
     const nextIndex = Math.round(container.scrollTop / container.clientHeight);
@@ -280,6 +344,7 @@ export function SwipePage({
             const isDragged = dragDrinkId === drink.id;
             const isTried = triedDrinks.includes(drink.id);
             const isLiked = likedDrinks.includes(drink.id);
+            const isExpanded = expandedDrinkId === drink.id;
             const rotation = isDragged ? dragOffset.x / 14 : 0;
             const decisionLabel =
               isDragged && dragOffset.x > 28
@@ -311,6 +376,7 @@ export function SwipePage({
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
+                  onClick={(event) => handleCardClick(drink, event)}
                 >
                   <div className="swipe-card-gradient" />
                   {decisionLabel ? (
@@ -331,29 +397,41 @@ export function SwipePage({
                         ? "swipe-like-button liked"
                         : "swipe-like-button"
                     }
-                    onClick={() => handleLike(drink)}
+                    type="button"
+                    onTouchStart={(event) => {
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleLike(drink);
+                    }}
+                    onTouchEnd={(event) => {
+                      event.stopPropagation();
+                      handleLike(drink);
+                    }}
+                    onMouseDown={(event) => {
+                      event.stopPropagation();
+                    }}
                     aria-label={isLiked ? "Unlike this drink" : "Like this drink"}
                   >
                     ♥
                   </button>
-                  <div className="swipe-card-progress">
-                    <span>{index + 1}</span>
-                    <small>/ {candidates.length}</small>
-                  </div>
                   <div className="swipe-card-media">
                     <DrinkArtwork drink={drink} />
                   </div>
-                  <div className="swipe-body">
-                    {isActive ? (
+                  <div className="swipe-top-info">
+                    {isActive && showTapHint ? (
                       <p className="hero-copy swipe-intro-copy">
-                        Swipe right if you&apos;ve already had it, left if not.
-                        Double tap to like it. Scroll for the next drink.
+                        Single tap to reveal more. Double tap to like. Swipe
+                        sideways for tried or not tried. Scroll for the next drink.
                       </p>
                     ) : null}
                     <div className="title-row">
                       <h2>{drink.name}</h2>
                       <span className="rating-pill">{drink.rating.toFixed(1)}</span>
                     </div>
+                  </div>
+                  <div className={isExpanded ? "swipe-body expanded" : "swipe-body"}>
                     <p className="muted-line">
                       {drink.category} • ₹{drink.price}
                     </p>
