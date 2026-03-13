@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AgeGate } from "./components/AgeGate";
 import { AppShell } from "./components/AppShell";
+import { SplashScreen } from "./components/SplashScreen";
 import { CatalogPage } from "./pages/CatalogPage";
 import { DrinkDetailPage } from "./pages/DrinkDetailPage";
 import { HomePage } from "./pages/HomePage";
@@ -18,6 +19,7 @@ import {
 import type { Route } from "./types";
 
 export function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [ageVerified, setAgeVerifiedState] = usePersistentState(
     getAgeVerified,
     setAgeVerified,
@@ -38,6 +40,11 @@ export function App() {
     window.addEventListener("hashchange", syncRoute);
     syncRoute();
     return () => window.removeEventListener("hashchange", syncRoute);
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setShowSplash(false), 6000);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
@@ -69,6 +76,10 @@ export function App() {
   }
 
   if (!ageVerified) {
+    if (showSplash) {
+      return <SplashScreen />;
+    }
+
     return (
       <AgeGate
         onConfirm={() => {
@@ -79,6 +90,10 @@ export function App() {
         }}
       />
     );
+  }
+
+  if (showSplash) {
+    return <SplashScreen />;
   }
 
   return (
