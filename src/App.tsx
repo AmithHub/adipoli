@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdminShell } from "./admin/AdminShell";
 import { AgeGate } from "./components/AgeGate";
 import { AppShell } from "./components/AppShell";
 import { ProfileAuthModal } from "./components/ProfileAuthModal";
@@ -9,28 +10,33 @@ import { HomePage } from "./pages/HomePage";
 import { LeaderboardsPage } from "./pages/LeaderboardsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SwipePage } from "./pages/SwipePage";
+import { subscribeToCmsUpdates } from "./services/cmsService";
 import { usePersistentState } from "./hooks/usePersistentState";
 import { navigateTo, parseHashRoute } from "./lib/router";
 import {
   getAgeVerified,
   getAuthenticated,
+  getDiscoverIntroSeen,
   getLikedDrinks,
   getProfilePromptDismissals,
   getProfilePromptSwipeCount,
+  getSplashSeen,
   getTriedDrinks,
   getUserProfile,
   setAgeVerified,
   setAuthenticated,
+  setDiscoverIntroSeen,
   setLikedDrinks,
   setProfilePromptDismissals,
   setProfilePromptSwipeCount,
+  setSplashSeen,
   setTriedDrinks,
   setUserProfile,
 } from "./lib/storage";
 import type { Route, UserProfile } from "./types";
 
 export function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => !getSplashSeen());
   const [ageVerified, setAgeVerifiedState] = usePersistentState(
     getAgeVerified,
     setAgeVerified,
@@ -60,24 +66,42 @@ export function App() {
     setProfilePromptSwipeCount,
   );
   const [route, setRoute] = useState<Route>(parseHashRoute);
-  const [swipeOverlayOpen, setSwipeOverlayOpen] = useState(ageVerified);
+  const [swipeOverlayOpen, setSwipeOverlayOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [cmsVersion, setCmsVersion] = useState(0);
 
   useEffect(() => {
     const syncRoute = () => setRoute(parseHashRoute());
     window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncRoute);
     syncRoute();
-    return () => window.removeEventListener("hashchange", syncRoute);
+    return () => {
+      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener("popstate", syncRoute);
+    };
   }, []);
 
   useEffect(() => {
+    if (!showSplash) {
+      return;
+    }
+
     const timeout = window.setTimeout(() => setShowSplash(false), 6000);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [showSplash]);
 
   useEffect(() => {
-    if (ageVerified) {
+    if (!showSplash) {
+      setSplashSeen(true);
+    }
+  }, [showSplash]);
+
+  useEffect(() => subscribeToCmsUpdates(() => setCmsVersion((current) => current + 1)), []);
+
+  useEffect(() => {
+    if (ageVerified && !getDiscoverIntroSeen()) {
       setSwipeOverlayOpen(true);
+      setDiscoverIntroSeen(true);
     }
   }, [ageVerified]);
 
@@ -95,12 +119,19 @@ export function App() {
   let page;
 
   if (route.name === "home") {
-    page = <HomePage onNavigate={handleNavigate} />;
+    page = <HomePage key={`home-${cmsVersion}`} onNavigate={handleNavigate} />;
   } else if (route.name === "catalog") {
-    page = <CatalogPage query={route.query} onNavigate={handleNavigate} />;
+    page = (
+      <CatalogPage
+        key={`catalog-${cmsVersion}-${route.query ?? ""}`}
+        query={route.query}
+        onNavigate={handleNavigate}
+      />
+    );
   } else if (route.name === "detail") {
     page = (
       <DrinkDetailPage
+        key={`detail-${cmsVersion}-${route.drinkId}`}
         drinkId={route.drinkId}
         likedDrinks={likedDrinks}
         onNavigate={handleNavigate}
@@ -114,10 +145,11 @@ export function App() {
       />
     );
   } else if (route.name === "leaderboards") {
-    page = <LeaderboardsPage onNavigate={handleNavigate} />;
+    page = <LeaderboardsPage key={`leaderboards-${cmsVersion}`} onNavigate={handleNavigate} />;
   } else if (route.name === "profile") {
     page = (
       <ProfilePage
+        key={`profile-${cmsVersion}`}
         profile={userProfile}
         isAuthenticated={isAuthenticated}
         triedDrinks={triedDrinks}
@@ -133,7 +165,11 @@ export function App() {
       />
     );
   } else {
-    page = <HomePage onNavigate={handleNavigate} />;
+    page = <HomePage key={`home-${cmsVersion}`} onNavigate={handleNavigate} />;
+  }
+
+  if (route.name === "admin") {
+    return <AdminShell route={route} onNavigate={handleNavigate} />;
   }
 
   if (!ageVerified) {
@@ -147,7 +183,10 @@ export function App() {
           setAgeVerifiedState(true);
           navigateTo({ name: "home" });
           setRoute({ name: "home" });
-          setSwipeOverlayOpen(true);
+          if (!getDiscoverIntroSeen()) {
+            setSwipeOverlayOpen(true);
+            setDiscoverIntroSeen(true);
+          }
         }}
       />
     );
@@ -164,6 +203,7 @@ export function App() {
       </AppShell>
       {swipeOverlayOpen ? (
         <SwipePage
+          key={`swipe-${cmsVersion}`}
           isAuthenticated={isAuthenticated}
           profilePromptDismissals={profilePromptDismissals}
           profilePromptSwipeCount={profilePromptSwipeCount}

@@ -1,4 +1,4 @@
-export type DrinkCategory = "Whisky" | "Rum" | "Brandy" | "Vodka" | "Beer";
+export type DrinkCategory = "Whisky" | "Rum" | "Brandy" | "Vodka" | "Beer" | "Gin";
 
 export type DrinkTag =
   | "smooth"
@@ -12,6 +12,7 @@ export type DrinkTag =
 export interface Review {
   id: string;
   author: string;
+  username?: string;
   overall: number;
   taste: number;
   smoothness: number;
@@ -19,6 +20,8 @@ export interface Review {
   hangover: number;
   comment: string;
   wouldBuyAgain: boolean;
+  dateSubmitted?: string;
+  status?: "approved" | "hidden";
 }
 
 export interface Drink {
@@ -26,6 +29,8 @@ export interface Drink {
   name: string;
   category: DrinkCategory;
   price: number;
+  bottleSize?: string;
+  abv?: number;
   rating: number;
   hangoverScore: number;
   taste: number;
@@ -34,7 +39,13 @@ export interface Drink {
   description: string;
   tags: DrinkTag[];
   trending: boolean;
+  featured?: boolean;
+  topRated?: boolean;
+  bestValue?: boolean;
+  lowHangover?: boolean;
   imageAccent: string;
+  imageUrl?: string;
+  createdAt?: string;
   reviews: Review[];
 }
 
@@ -49,10 +60,20 @@ export interface UserProfile {
   email: string;
 }
 
+export type AdminSection =
+  | "dashboard"
+  | "drinks"
+  | "images"
+  | "reviews"
+  | "categories"
+  | "leaderboards"
+  | "content";
+
 export type Route =
   | { name: "home" }
   | { name: "catalog"; query?: string }
   | { name: "detail"; drinkId: string }
   | { name: "swipe" }
   | { name: "leaderboards" }
-  | { name: "profile" };
+  | { name: "profile" }
+  | { name: "admin"; section: AdminSection };

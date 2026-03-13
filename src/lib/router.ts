@@ -1,6 +1,23 @@
 import type { Route } from "../types";
 
 export function parseHashRoute(): Route {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const section = pathname.replace("/admin", "").replace(/^\/+/, "");
+    const normalizedSection =
+      section === "drinks" ||
+      section === "images" ||
+      section === "reviews" ||
+      section === "categories" ||
+      section === "leaderboards" ||
+      section === "content"
+        ? section
+        : "dashboard";
+
+    return { name: "admin", section: normalizedSection };
+  }
+
   const hash = window.location.hash.replace(/^#/, "");
   const [path, queryString] = hash.split("?");
   const params = new URLSearchParams(queryString ?? "");
@@ -31,30 +48,36 @@ export function parseHashRoute(): Route {
 
 export function navigateTo(route: Route): void {
   if (route.name === "home") {
-    window.location.hash = "/";
+    window.history.pushState({}, "", "/#/");
     return;
   }
 
   if (route.name === "catalog") {
     const query = route.query ? `?q=${encodeURIComponent(route.query)}` : "";
-    window.location.hash = `/catalog${query}`;
+    window.history.pushState({}, "", `/#/catalog${query}`);
     return;
   }
 
   if (route.name === "detail") {
-    window.location.hash = `/drink/${route.drinkId}`;
+    window.history.pushState({}, "", `/#/drink/${route.drinkId}`);
     return;
   }
 
   if (route.name === "swipe") {
-    window.location.hash = "/swipe";
+    window.history.pushState({}, "", "/#/swipe");
     return;
   }
 
   if (route.name === "leaderboards") {
-    window.location.hash = "/leaderboards";
+    window.history.pushState({}, "", "/#/leaderboards");
     return;
   }
 
-  window.location.hash = "/profile";
+  if (route.name === "profile") {
+    window.history.pushState({}, "", "/#/profile");
+    return;
+  }
+
+  const section = route.section === "dashboard" ? "" : `/${route.section}`;
+  window.history.pushState({}, "", `/admin${section}`);
 }

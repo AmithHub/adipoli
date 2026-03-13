@@ -125,4 +125,5 @@ export const categories: Array<"All" | DrinkCategory> = [
   "Brandy",
   "Vodka",
   "Beer",
+  "Gin",
 ];

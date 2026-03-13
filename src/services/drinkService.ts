@@ -1,30 +1,42 @@
-import { categories, drinks } from "../data/drinks";
+import { categories } from "../data/drinks";
+import { getCmsDrinks } from "./cmsService";
 import type { Drink, DrinkFilters, DrinkTag } from "../types";
 
 export function getAllDrinks(): Drink[] {
-  return drinks;
+  return getCmsDrinks();
 }
 
 export function getCategories() {
-  return categories;
+  const dynamic = getAllDrinks().map((drink) => drink.category);
+  return ["All", ...new Set([...categories.slice(1), ...dynamic])] as typeof categories;
 }
 
 export function getDrinkById(drinkId: string): Drink | undefined {
-  return drinks.find((drink) => drink.id === drinkId);
+  const drink = getAllDrinks().find((item) => item.id === drinkId);
+  if (!drink) {
+    return undefined;
+  }
+
+  return {
+    ...drink,
+    reviews: drink.reviews.filter((review) => review.status !== "hidden"),
+  };
 }
 
 export function getTrendingDrinks(limit = 4): Drink[] {
-  return drinks.filter((drink) => drink.trending).slice(0, limit);
+  return getAllDrinks()
+    .filter((drink) => drink.trending || drink.featured)
+    .slice(0, limit);
 }
 
 export function getTopRatedDrinks(limit = 4): Drink[] {
-  return [...drinks].sort((a, b) => b.rating - a.rating).slice(0, limit);
+  return [...getAllDrinks()].sort((a, b) => b.rating - a.rating).slice(0, limit);
 }
 
 export function filterDrinks(query: string, filters: DrinkFilters): Drink[] {
   const normalizedQuery = query.toLowerCase().trim();
 
-  return drinks.filter((drink) => {
+  return getAllDrinks().filter((drink) => {
     const matchesQuery =
       !normalizedQuery ||
       drink.name.toLowerCase().includes(normalizedQuery) ||

@@ -8,6 +8,8 @@ const USER_PROFILE_KEY = "adipoli-user-profile";
 const AUTHENTICATED_KEY = "adipoli-authenticated";
 const PROFILE_PROMPT_DISMISSALS_KEY = "adipoli-profile-prompt-dismissals";
 const PROFILE_PROMPT_SWIPE_COUNT_KEY = "adipoli-profile-prompt-swipe-count";
+const SPLASH_SEEN_KEY = "adipoli-splash-seen-session";
+const DISCOVER_INTRO_SEEN_KEY = "adipoli-discover-intro-seen";
 
 export function getAgeVerified(): boolean {
   return window.localStorage.getItem(AGE_KEY) === "true";
@@ -118,4 +120,20 @@ export function getProfilePromptSwipeCount(): number {
 
 export function setProfilePromptSwipeCount(value: number): void {
   window.localStorage.setItem(PROFILE_PROMPT_SWIPE_COUNT_KEY, String(value));
+}
+
+export function getSplashSeen(): boolean {
+  return window.sessionStorage.getItem(SPLASH_SEEN_KEY) === "true";
+}
+
+export function setSplashSeen(value: boolean): void {
+  window.sessionStorage.setItem(SPLASH_SEEN_KEY, String(value));
+}
+
+export function getDiscoverIntroSeen(): boolean {
+  return window.localStorage.getItem(DISCOVER_INTRO_SEEN_KEY) === "true";
+}
+
+export function setDiscoverIntroSeen(value: boolean): void {
+  window.localStorage.setItem(DISCOVER_INTRO_SEEN_KEY, String(value));
 }

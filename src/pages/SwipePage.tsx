@@ -20,6 +20,7 @@ interface SwipePageProps {
 }
 
 type GestureMode = "card" | "sheet" | null;
+const HEADER_FADE_DISTANCE = 180;
 
 function shuffleDrinks(drinks: Drink[]): Drink[] {
   const copy = [...drinks];
@@ -30,6 +31,15 @@ function shuffleDrinks(drinks: Drink[]): Drink[] {
   }
 
   return copy;
+}
+
+function getHeaderProgress(scrollTop: number, detailsVisible: boolean): number {
+  if (detailsVisible) {
+    return 0;
+  }
+
+  const rawProgress = Math.max(0, 1 - scrollTop / HEADER_FADE_DISTANCE);
+  return rawProgress * rawProgress * (3 - 2 * rawProgress);
 }
 
 export function SwipePage({
@@ -51,7 +61,7 @@ export function SwipePage({
   const singleTapTimeoutRef = useRef<number | null>(null);
   const suppressClickUntilRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [expandedDrinkId, setExpandedDrinkId] = useState<string | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   const [headerFadeProgress, setHeaderFadeProgress] = useState(1);
   const [showTapHint, setShowTapHint] = useState(() => !getSwipeHintDismissed());
   const [feedback, setFeedback] = useState("");
@@ -98,16 +108,18 @@ export function SwipePage({
   }, [feedback]);
 
   useEffect(() => {
-    setExpandedDrinkId(null);
-  }, [activeIndex]);
-
-  useEffect(() => {
     return () => {
       if (singleTapTimeoutRef.current) {
         window.clearTimeout(singleTapTimeoutRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const container = feedRef.current;
+    const scrollTop = container?.scrollTop ?? 0;
+    setHeaderFadeProgress(getHeaderProgress(scrollTop, detailsVisible));
+  }, [detailsVisible]);
 
   function goToIndex(nextIndex: number) {
     const clamped = Math.max(0, Math.min(nextIndex, candidates.length - 1));
@@ -157,23 +169,23 @@ export function SwipePage({
     setLikedPulseId(drink.id);
   }
 
-  function scheduleToggleDetails(drinkId: string) {
+  function scheduleToggleDetails() {
     if (singleTapTimeoutRef.current) {
       window.clearTimeout(singleTapTimeoutRef.current);
     }
 
     singleTapTimeoutRef.current = window.setTimeout(() => {
-      toggleDetails(drinkId);
+      toggleDetails();
       singleTapTimeoutRef.current = null;
     }, 220);
   }
 
-  function toggleDetails(drinkId: string) {
+  function toggleDetails() {
     if (showTapHint) {
       setShowTapHint(false);
       setSwipeHintDismissed(true);
     }
-    setExpandedDrinkId((current) => (current === drinkId ? null : drinkId));
+    setDetailsVisible((current) => !current);
   }
 
   function advanceCard(drink: Drink, direction: "left" | "right") {
@@ -345,7 +357,7 @@ export function SwipePage({
       return;
     }
 
-    scheduleToggleDetails(drink.id);
+    scheduleToggleDetails();
   }
 
   function handleFeedScroll() {
@@ -357,9 +369,7 @@ export function SwipePage({
       setShowSwipeCoach(false);
     }
 
-    const fadeDistance = 72;
-    const progress = Math.max(0, 1 - container.scrollTop / fadeDistance);
-    setHeaderFadeProgress(progress);
+    setHeaderFadeProgress(getHeaderProgress(container.scrollTop, detailsVisible));
 
     if (singleTapTimeoutRef.current) {
       window.clearTimeout(singleTapTimeoutRef.current);
@@ -420,7 +430,7 @@ export function SwipePage({
             const isDragged = dragDrinkId === drink.id;
             const isTried = triedDrinks.includes(drink.id);
             const isLiked = likedDrinks.includes(drink.id);
-            const isExpanded = expandedDrinkId === drink.id;
+            const isExpanded = detailsVisible;
             const showCoach = isActive && index === 0 && showSwipeCoach;
             const rotation = isDragged ? dragOffset.x / 14 : 0;
             const decisionLabel =
@@ -433,15 +443,19 @@ export function SwipePage({
             return (
               <article key={drink.id} className="swipe-feed-item">
                 <section
-                  className={
+                  className={[
+                    "swipe-card",
+                    isDragged ? "swipe-card-dragging" : "",
                     cardLeaving === "left" && isDragged
-                      ? "swipe-card swipe-card-leaving-left"
-                      : cardLeaving === "right" && isDragged
-                        ? "swipe-card swipe-card-leaving-right"
-                        : showCoach
-                          ? "swipe-card swipe-card-guide"
-                        : "swipe-card"
-                  }
+                      ? "swipe-card-leaving-left"
+                      : "",
+                    cardLeaving === "right" && isDragged
+                      ? "swipe-card-leaving-right"
+                      : "",
+                    showCoach ? "swipe-card-guide" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   style={{
                     transform: isDragged
                       ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
@@ -521,14 +535,6 @@ export function SwipePage({
                           {tag}
                         </span>
                       ))}
-                    </div>
-                    <div className="swipe-status-row">
-                      <span className={isTried ? "status-pill active" : "status-pill"}>
-                        {isTried ? "Already in profile" : "Swipe right to save"}
-                      </span>
-                      <span className={isLiked ? "status-pill active" : "status-pill"}>
-                        {isLiked ? "Liked" : "Double tap to like"}
-                      </span>
                     </div>
                     <div className="swipe-actions">
                       <button
