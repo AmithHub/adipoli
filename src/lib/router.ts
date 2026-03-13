@@ -18,6 +18,14 @@ export function parseHashRoute(): Route {
     return { name: "swipe" };
   }
 
+  if (path.startsWith("/leaderboards")) {
+    return { name: "leaderboards" };
+  }
+
+  if (path.startsWith("/profile")) {
+    return { name: "profile" };
+  }
+
   return { name: "home" };
 }
 
@@ -38,5 +46,15 @@ export function navigateTo(route: Route): void {
     return;
   }
 
-  window.location.hash = "/swipe";
+  if (route.name === "swipe") {
+    window.location.hash = "/swipe";
+    return;
+  }
+
+  if (route.name === "leaderboards") {
+    window.location.hash = "/leaderboards";
+    return;
+  }
+
+  window.location.hash = "/profile";
 }

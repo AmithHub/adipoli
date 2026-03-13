@@ -6,11 +6,17 @@ import { getSwipeHintDismissed, setSwipeHintDismissed } from "../lib/storage";
 import type { Drink } from "../types";
 
 interface SwipePageProps {
+  isAuthenticated: boolean;
+  profilePromptDismissals: number;
+  profilePromptSwipeCount: number;
   triedDrinks: string[];
   likedDrinks: string[];
   onClose: () => void;
+  onOpenAuth: () => void;
   onMarkTried: (drinkId: string) => void;
   onToggleLike: (drinkId: string) => void;
+  onProfilePromptDismiss: () => void;
+  onProfilePromptSwipeCountChange: (count: number) => void;
 }
 
 type GestureMode = "card" | "sheet" | null;
@@ -27,11 +33,17 @@ function shuffleDrinks(drinks: Drink[]): Drink[] {
 }
 
 export function SwipePage({
+  isAuthenticated,
+  profilePromptDismissals,
+  profilePromptSwipeCount,
   triedDrinks,
   likedDrinks,
   onClose,
+  onOpenAuth,
   onMarkTried,
   onToggleLike,
+  onProfilePromptDismiss,
+  onProfilePromptSwipeCountChange,
 }: SwipePageProps) {
   const candidates = useMemo(() => shuffleDrinks(getAllDrinks()), []);
   const feedRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +66,7 @@ export function SwipePage({
   const [lastTriedName, setLastTriedName] = useState("");
   const [showRatePrompt, setShowRatePrompt] = useState(false);
   const [showSwipeCoach, setShowSwipeCoach] = useState(true);
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
 
   const activeDrink = candidates[activeIndex];
 
@@ -105,6 +118,10 @@ export function SwipePage({
 
   function handleChoice(drink: Drink, tried: boolean) {
     const alreadyTried = triedDrinks.includes(drink.id);
+    const nextSwipeCount = profilePromptSwipeCount + 1;
+    const nextPromptThreshold = 2 + profilePromptDismissals * 4;
+
+    onProfilePromptSwipeCountChange(nextSwipeCount);
 
     if (tried) {
       if (!alreadyTried) {
@@ -119,6 +136,10 @@ export function SwipePage({
       );
     } else {
       setFeedback(`Skipped ${drink.name}. We will keep this style in mind.`);
+    }
+
+    if (!isAuthenticated && nextSwipeCount >= nextPromptThreshold) {
+      setShowProfilePrompt(true);
     }
   }
 
@@ -306,6 +327,10 @@ export function SwipePage({
 
     if (showRatePrompt) {
       setShowRatePrompt(false);
+    }
+
+    if (showProfilePrompt) {
+      setShowProfilePrompt(false);
     }
 
     if (target.closest("button")) {
@@ -535,6 +560,55 @@ export function SwipePage({
             <button className="ghost-button" onClick={() => setShowRatePrompt(false)}>
               Later
             </button>
+          </div>
+        ) : null}
+
+        {showProfilePrompt ? (
+          <div className="modal-backdrop swipe-modal-backdrop">
+            <div
+              className="modal-card profile-prompt-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="profile-prompt-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowProfilePrompt(false);
+                  onProfilePromptDismiss();
+                }}
+                aria-label="Close profile prompt"
+              >
+                ×
+              </button>
+              <p className="eyebrow">Save your history</p>
+              <h2 id="profile-prompt-title">Save your drink history</h2>
+              <p className="hero-copy">
+                Create a profile to track the drinks you&apos;ve tried and the ones
+                you like.
+              </p>
+              <div className="profile-prompt-actions">
+                <button
+                  className="primary-button"
+                  onClick={() => {
+                    setShowProfilePrompt(false);
+                    onOpenAuth();
+                  }}
+                >
+                  Login / Create Profile
+                </button>
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    setShowProfilePrompt(false);
+                    onProfilePromptDismiss();
+                  }}
+                >
+                  Continue without profile
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
 

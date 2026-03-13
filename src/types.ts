@@ -44,8 +44,15 @@ export interface DrinkFilters {
   minRating: "All" | "4.0+" | "4.3+" | "4.5+";
 }
 
+export interface UserProfile {
+  username: string;
+  email: string;
+}
+
 export type Route =
   | { name: "home" }
   | { name: "catalog"; query?: string }
   | { name: "detail"; drinkId: string }
-  | { name: "swipe" };
+  | { name: "swipe" }
+  | { name: "leaderboards" }
+  | { name: "profile" };

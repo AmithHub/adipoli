@@ -4,12 +4,16 @@ import { getDrinkById } from "../services/drinkService";
 
 interface DrinkDetailPageProps {
   drinkId: string;
+  likedDrinks: string[];
   onNavigate: (route: Route) => void;
+  onToggleLike: (drinkId: string) => void;
 }
 
 export function DrinkDetailPage({
   drinkId,
+  likedDrinks,
   onNavigate,
+  onToggleLike,
 }: DrinkDetailPageProps) {
   const drink = getDrinkById(drinkId);
 
@@ -24,6 +28,8 @@ export function DrinkDetailPage({
       </div>
     );
   }
+
+  const isLiked = likedDrinks.includes(drink.id);
 
   return (
     <div className="page">
@@ -41,6 +47,11 @@ export function DrinkDetailPage({
             <span className="detail-pill">₹{drink.price}</span>
             <span className="detail-pill">Rating {drink.rating.toFixed(1)}</span>
             <span className="detail-pill">Hangover {drink.hangoverScore}/10</span>
+          </div>
+          <div className="detail-action-row">
+            <button className="primary-button" onClick={() => onToggleLike(drink.id)}>
+              {isLiked ? "Remove from liked" : "Like this drink"}
+            </button>
           </div>
         </div>
       </section>

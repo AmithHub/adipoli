@@ -3,17 +3,25 @@ import type { Route } from "../types";
 
 interface AppShellProps {
   route: Route;
+  isSwipeOpen: boolean;
   onNavigate: (route: Route) => void;
   children: ReactNode;
 }
 
-const navItems: Array<{ label: string; route: Route }> = [
-  { label: "Home", route: { name: "home" } },
-  { label: "Catalog", route: { name: "catalog" } },
-  { label: "Swipe", route: { name: "swipe" } },
+const navItems: Array<{
+  label: string;
+  icon: string;
+  route: Route;
+  ariaLabel?: string;
+}> = [
+  { label: "Home", icon: "⌂", route: { name: "home" } },
+  { label: "Catalog", icon: "◫", route: { name: "catalog" } },
+  { label: "Discover", icon: "✦", route: { name: "swipe" } },
+  { label: "Boards", icon: "◈", route: { name: "leaderboards" }, ariaLabel: "Leaderboards" },
+  { label: "Profile", icon: "●", route: { name: "profile" }, ariaLabel: "My Profile" },
 ];
 
-export function AppShell({ route, onNavigate, children }: AppShellProps) {
+export function AppShell({ route, isSwipeOpen, onNavigate, children }: AppShellProps) {
   return (
     <div className="app-shell">
       <main className="screen">{children}</main>
@@ -23,14 +31,18 @@ export function AppShell({ route, onNavigate, children }: AppShellProps) {
       <nav className="bottom-nav" aria-label="Primary">
         {navItems.map((item) => {
           const active =
-            item.route.name === "swipe" ? false : route.name === item.route.name;
+            item.route.name === "swipe" ? isSwipeOpen : route.name === item.route.name;
           return (
             <button
               key={item.label}
               className={active ? "nav-item active" : "nav-item"}
               onClick={() => onNavigate(item.route)}
+              aria-label={item.ariaLabel ?? item.label}
             >
-              {item.label}
+              <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span className="nav-label">{item.label}</span>
             </button>
           );
         })}

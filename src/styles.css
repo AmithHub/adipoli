@@ -1954,9 +1954,9 @@ h3 {
   transform: translateX(-50%);
   width: min(calc(100% - 24px), 452px);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
   border-radius: 24px;
   background: rgba(22, 22, 24, 0.94);
   border: 1px solid var(--line);
@@ -1997,6 +1997,191 @@ h3 {
   color: var(--accent-strong);
 }
 
+.nav-item {
+  min-height: 58px;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.nav-icon {
+  display: block;
+  line-height: 1;
+  font-size: 0.96rem;
+  opacity: 0.92;
+}
+
+.nav-label {
+  display: block;
+  font-size: 0.66rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.nav-item.active .nav-icon,
+.nav-item.active .nav-label {
+  opacity: 1;
+}
+
+.detail-action-row {
+  margin-top: 16px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 6, 8, 0.76);
+  backdrop-filter: blur(10px);
+}
+
+.modal-card {
+  position: relative;
+  width: min(100%, 380px);
+  padding: 24px 20px 20px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+    rgba(24, 24, 27, 0.98);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.auth-modal,
+.profile-prompt-modal {
+  display: grid;
+  gap: 12px;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.auth-actions,
+.profile-prompt-actions,
+.profile-card-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-google-button {
+  min-height: 48px;
+}
+
+.form-error {
+  margin: 0;
+  color: #f2b6a5;
+  font-size: 0.88rem;
+}
+
+.profile-hero {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 28px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 217, 141, 0.28), transparent 34%),
+    linear-gradient(180deg, rgba(245, 185, 82, 0.3), rgba(117, 70, 8, 0.18));
+  color: #fff4d4;
+  font-family: "Sora", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.profile-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-edit-button {
+  width: 100%;
+}
+
+.profile-stats-grid,
+.profile-drink-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-drink-card {
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.profile-drink-visual {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+}
+
+.profile-drink-visual .drink-artwork {
+  min-height: 220px;
+}
+
+.profile-drink-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.empty-panel {
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+
+.swipe-modal-backdrop {
+  z-index: 8;
+}
+
 @media (min-width: 768px) {
 
   .screen,
@@ -2030,5 +2215,24 @@ h3 {
 
   .filter-panel {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-hero {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+  }
+
+  .profile-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-drink-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-card-actions,
+  .auth-actions,
+  .profile-prompt-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
