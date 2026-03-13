@@ -582,9 +582,17 @@ h3 {
   align-items: start;
   justify-content: space-between;
   gap: 12px;
-  position: relative;
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: 16px;
+  right: 16px;
   z-index: 4;
-  margin-bottom: 12px;
+  overflow: hidden;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    max-height 180ms ease,
+    margin-bottom 180ms ease;
 }
 
 .swipe-close-button {
@@ -599,6 +607,15 @@ h3 {
   line-height: 1;
 }
 
+.swipe-close-floating {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 6;
+  transition: opacity 180ms ease;
+  pointer-events: auto;
+}
+
 .swipe-intro-copy {
   margin: 0 0 14px;
   color: rgba(255, 246, 228, 0.82);
@@ -611,6 +628,7 @@ h3 {
 
 .swipe-feed {
   flex: 1;
+  height: 100%;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
@@ -621,7 +639,7 @@ h3 {
 }
 
 .swipe-feed-item {
-  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   scroll-snap-align: start;
   display: flex;
 }
@@ -629,11 +647,11 @@ h3 {
 .swipe-card {
   position: relative;
   flex: 1;
-  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 0;
   background: #0f0f11;
-  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42);
+  box-shadow: none;
   transition: transform 180ms ease, box-shadow 180ms ease;
   user-select: none;
   touch-action: pan-y;
@@ -649,7 +667,7 @@ h3 {
 }
 
 .swipe-card-media .drink-artwork {
-  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 .swipe-card-media .drink-artwork-chip {
@@ -709,7 +727,7 @@ h3 {
 
 .swipe-decision-badge {
   position: absolute;
-  top: 78px;
+  top: 50%;
   z-index: 3;
   min-height: 40px;
   display: inline-flex;
@@ -719,18 +737,26 @@ h3 {
   border: 2px solid currentColor;
   font-weight: 700;
   letter-spacing: 0.08em;
+  transform: translateY(-50%);
+  transform-origin: center;
 }
 
 .swipe-decision-badge.tried {
   left: 18px;
   color: #95ea92;
   background: rgba(34, 98, 41, 0.22);
+  transform: translateY(-50%) rotate(-90deg);
 }
 
 .swipe-decision-badge.skipped {
   right: 18px;
   color: #ff9c86;
   background: rgba(137, 58, 39, 0.2);
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.swipe-card-guide {
+  animation: swipe-card-guide 2000ms ease-in-out infinite;
 }
 
 .like-burst {
@@ -798,10 +824,20 @@ h3 {
 
 .feed-feedback {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 5;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: min(calc(100% - 32px), 320px);
+  min-height: 0;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
+  background: rgba(12, 12, 14, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
 }
 
 .swipe-top-info {
@@ -874,6 +910,34 @@ h3 {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes swipe-card-guide {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+    box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42);
+  }
+
+  18% {
+    transform: translateX(-18px) rotate(-7deg);
+    box-shadow: 0 30px 58px rgba(0, 0, 0, 0.46);
+  }
+
+  36% {
+    transform: translateX(0) rotate(0deg);
+    box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42);
+  }
+
+  58% {
+    transform: translateX(18px) rotate(7deg);
+    box-shadow: 0 30px 58px rgba(0, 0, 0, 0.46);
+  }
+
+  76% {
+    transform: translateX(0) rotate(0deg);
+    box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42);
   }
 }
 

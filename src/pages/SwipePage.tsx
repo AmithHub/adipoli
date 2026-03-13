@@ -40,6 +40,7 @@ export function SwipePage({
   const suppressClickUntilRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [expandedDrinkId, setExpandedDrinkId] = useState<string | null>(null);
+  const [headerFadeProgress, setHeaderFadeProgress] = useState(1);
   const [showTapHint, setShowTapHint] = useState(() => !getSwipeHintDismissed());
   const [feedback, setFeedback] = useState("");
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -52,6 +53,7 @@ export function SwipePage({
   const [likedPulseId, setLikedPulseId] = useState<string | null>(null);
   const [lastTriedName, setLastTriedName] = useState("");
   const [showRatePrompt, setShowRatePrompt] = useState(false);
+  const [showSwipeCoach, setShowSwipeCoach] = useState(true);
 
   const activeDrink = candidates[activeIndex];
 
@@ -72,6 +74,15 @@ export function SwipePage({
     const timeout = window.setTimeout(() => setLikedPulseId(null), 400);
     return () => window.clearTimeout(timeout);
   }, [likedPulseId]);
+
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setFeedback(""), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [feedback]);
 
   useEffect(() => {
     setExpandedDrinkId(null);
@@ -145,6 +156,7 @@ export function SwipePage({
   }
 
   function advanceCard(drink: Drink, direction: "left" | "right") {
+    setShowSwipeCoach(false);
     setDragDrinkId(drink.id);
     setCardLeaving(direction);
     window.setTimeout(() => {
@@ -170,6 +182,10 @@ export function SwipePage({
 
     const deltaX = x - dragStart.x;
     const deltaY = y - dragStart.y;
+
+     if (showSwipeCoach && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+      setShowSwipeCoach(false);
+    }
 
     if (!gestureMode) {
       const atTop = (feedRef.current?.scrollTop ?? 0) <= 0;
@@ -284,6 +300,14 @@ export function SwipePage({
   function handleCardClick(drink: Drink, event: MouseEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
 
+    if (showSwipeCoach) {
+      setShowSwipeCoach(false);
+    }
+
+    if (showRatePrompt) {
+      setShowRatePrompt(false);
+    }
+
     if (target.closest("button")) {
       return;
     }
@@ -304,6 +328,13 @@ export function SwipePage({
     if (!container) {
       return;
     }
+    if (container.scrollTop > 12) {
+      setShowSwipeCoach(false);
+    }
+
+    const fadeDistance = 72;
+    const progress = Math.max(0, 1 - container.scrollTop / fadeDistance);
+    setHeaderFadeProgress(progress);
 
     if (singleTapTimeoutRef.current) {
       window.clearTimeout(singleTapTimeoutRef.current);
@@ -324,7 +355,15 @@ export function SwipePage({
         className="swipe-modal swipe-feed-shell"
         style={{ transform: `translateY(${sheetOffsetY}px)` }}
       >
-        <header className="swipe-modal-header">
+        <header
+          className="swipe-modal-header"
+          style={{
+            opacity: headerFadeProgress,
+            maxHeight: `${72 * headerFadeProgress + 12}px`,
+            marginBottom: `${12 * headerFadeProgress}px`,
+            transform: `translateY(${(1 - headerFadeProgress) * -12}px)`,
+          }}
+        >
           <div>
             <p className="eyebrow">Adichitundo?</p>
             <h1>Discover drinks fast</h1>
@@ -337,6 +376,14 @@ export function SwipePage({
             ×
           </button>
         </header>
+        <button
+          className="swipe-close-button swipe-close-floating"
+          style={{ opacity: 1 - headerFadeProgress }}
+          onClick={onClose}
+          aria-label="Close swipe drinks"
+        >
+          ×
+        </button>
 
         <div className="swipe-feed" ref={feedRef} onScroll={handleFeedScroll}>
           {candidates.map((drink, index) => {
@@ -345,6 +392,7 @@ export function SwipePage({
             const isTried = triedDrinks.includes(drink.id);
             const isLiked = likedDrinks.includes(drink.id);
             const isExpanded = expandedDrinkId === drink.id;
+            const showCoach = isActive && index === 0 && showSwipeCoach;
             const rotation = isDragged ? dragOffset.x / 14 : 0;
             const decisionLabel =
               isDragged && dragOffset.x > 28
@@ -361,6 +409,8 @@ export function SwipePage({
                       ? "swipe-card swipe-card-leaving-left"
                       : cardLeaving === "right" && isDragged
                         ? "swipe-card swipe-card-leaving-right"
+                        : showCoach
+                          ? "swipe-card swipe-card-guide"
                         : "swipe-card"
                   }
                   style={{
