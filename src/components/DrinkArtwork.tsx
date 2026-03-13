@@ -7,6 +7,7 @@ import whiskyImage from "../assets/drinks/whisky.svg";
 
 interface DrinkArtworkProps {
   drink: Drink;
+  hideCaption?: boolean;
 }
 
 const artworkByCategory = {
@@ -17,7 +18,7 @@ const artworkByCategory = {
   Beer: beerImage,
 } as const;
 
-export function DrinkArtwork({ drink }: DrinkArtworkProps) {
+export function DrinkArtwork({ drink, hideCaption = false }: DrinkArtworkProps) {
   return (
     <div className="drink-artwork" aria-hidden="true">
       <img
@@ -27,7 +28,7 @@ export function DrinkArtwork({ drink }: DrinkArtworkProps) {
       />
       <div className="drink-artwork-sheen" />
       <div className="drink-artwork-chip">{drink.category}</div>
-      <div className="art-caption">{drink.name}</div>
+      {hideCaption ? null : <div className="art-caption">{drink.name}</div>}
     </div>
   );
 }

@@ -353,14 +353,18 @@ export function SwipePage({
     <div className="swipe-overlay">
       <section
         className="swipe-modal swipe-feed-shell"
-        style={{ transform: `translateY(${sheetOffsetY}px)` }}
+        style={{
+          transform: `translateY(${sheetOffsetY}px)`,
+          ["--swipe-header-space" as string]: `${92 * headerFadeProgress}px`,
+        }}
       >
         <header
           className="swipe-modal-header"
           style={{
             opacity: headerFadeProgress,
-            maxHeight: `${72 * headerFadeProgress + 12}px`,
+            maxHeight: `calc((env(safe-area-inset-top) + 72px) * ${headerFadeProgress})`,
             marginBottom: `${12 * headerFadeProgress}px`,
+            paddingTop: `calc((env(safe-area-inset-top) + 14px) * ${headerFadeProgress})`,
             transform: `translateY(${(1 - headerFadeProgress) * -12}px)`,
           }}
         >
@@ -467,7 +471,7 @@ export function SwipePage({
                     ♥
                   </button>
                   <div className="swipe-card-media">
-                    <DrinkArtwork drink={drink} />
+                    <DrinkArtwork drink={drink} hideCaption={isExpanded} />
                   </div>
                   <div className="swipe-top-info">
                     {isActive && showTapHint ? (
