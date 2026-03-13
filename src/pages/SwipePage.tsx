@@ -2,6 +2,7 @@ import type { MouseEvent, TouchEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DrinkArtwork } from "../components/DrinkArtwork";
 import { getAllDrinks } from "../services/drinkService";
+import type { Drink } from "../types";
 
 interface SwipePageProps {
   triedDrinks: string[];
@@ -11,6 +12,19 @@ interface SwipePageProps {
   onToggleLike: (drinkId: string) => void;
 }
 
+type GestureMode = "card" | "sheet" | null;
+
+function shuffleDrinks(drinks: Drink[]): Drink[] {
+  const copy = [...drinks];
+
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+
+  return copy;
+}
+
 export function SwipePage({
   triedDrinks,
   likedDrinks,
@@ -18,83 +32,98 @@ export function SwipePage({
   onMarkTried,
   onToggleLike,
 }: SwipePageProps) {
-  const allDrinks = getAllDrinks();
-  const candidates = useMemo(() => allDrinks, [allDrinks]);
-  const [index, setIndex] = useState(0);
+  const candidates = useMemo(() => shuffleDrinks(getAllDrinks()), []);
+  const feedRef = useRef<HTMLDivElement | null>(null);
+  const lastTapRef = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [gestureMode, setGestureMode] = useState<GestureMode>(null);
+  const [dragDrinkId, setDragDrinkId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [sheetOffsetY, setSheetOffsetY] = useState(0);
   const [cardLeaving, setCardLeaving] = useState<"left" | "right" | null>(null);
-  const [likeBurst, setLikeBurst] = useState(false);
-  const [likedPulse, setLikedPulse] = useState(false);
-  const lastTapRef = useRef(0);
+  const [likeBurstId, setLikeBurstId] = useState<string | null>(null);
+  const [likedPulseId, setLikedPulseId] = useState<string | null>(null);
+  const [lastTriedName, setLastTriedName] = useState("");
+  const [showRatePrompt, setShowRatePrompt] = useState(false);
 
-  const drink = candidates[index];
-  const isTried = drink ? triedDrinks.includes(drink.id) : false;
-  const isLiked = drink ? likedDrinks.includes(drink.id) : false;
-
-  useEffect(() => {
-    setDragOffset({ x: 0, y: 0 });
-    setCardLeaving(null);
-  }, [index]);
+  const activeDrink = candidates[activeIndex];
 
   useEffect(() => {
-    if (!likeBurst) {
+    if (!likeBurstId) {
       return;
     }
 
-    const timeout = window.setTimeout(() => setLikeBurst(false), 650);
+    const timeout = window.setTimeout(() => setLikeBurstId(null), 650);
     return () => window.clearTimeout(timeout);
-  }, [likeBurst]);
+  }, [likeBurstId]);
 
   useEffect(() => {
-    if (!likedPulse) {
+    if (!likedPulseId) {
       return;
     }
 
-    const timeout = window.setTimeout(() => setLikedPulse(false), 400);
+    const timeout = window.setTimeout(() => setLikedPulseId(null), 400);
     return () => window.clearTimeout(timeout);
-  }, [likedPulse]);
+  }, [likedPulseId]);
 
-  function handleChoice(tried: boolean) {
-    if (!drink) {
-      return;
-    }
+  function goToIndex(nextIndex: number) {
+    const clamped = Math.max(0, Math.min(nextIndex, candidates.length - 1));
+    setActiveIndex(clamped);
+    const nextSection = feedRef.current?.children.item(clamped) as HTMLElement | null;
+    nextSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleChoice(drink: Drink, tried: boolean) {
+    const alreadyTried = triedDrinks.includes(drink.id);
 
     if (tried) {
-      onMarkTried(drink.id);
-      setFeedback(`Added ${drink.name} to Drinks I've Tried.`);
+      if (!alreadyTried) {
+        onMarkTried(drink.id);
+      }
+      setLastTriedName(drink.name);
+      setShowRatePrompt(true);
+      setFeedback(
+        alreadyTried
+          ? `${drink.name} is already in Drinks I've Tried.`
+          : `Added ${drink.name} to Drinks I've Tried.`,
+      );
     } else {
       setFeedback(`Skipped ${drink.name}. We will keep this style in mind.`);
     }
-
-    setIndex((current) => current + 1);
   }
 
-  function handleLike() {
-    if (!drink) {
-      return;
-    }
-
+  function handleLike(drink: Drink) {
+    const isLiked = likedDrinks.includes(drink.id);
     onToggleLike(drink.id);
     setFeedback(
       isLiked
         ? `Removed ${drink.name} from your likes.`
         : `Liked ${drink.name}. We will show you more like this.`,
     );
-    setLikeBurst(!isLiked);
-    setLikedPulse(true);
+    if (!isLiked) {
+      setLikeBurstId(drink.id);
+    }
+    setLikedPulseId(drink.id);
   }
 
-  function advanceCard(direction: "left" | "right") {
+  function advanceCard(drink: Drink, direction: "left" | "right") {
+    setDragDrinkId(drink.id);
     setCardLeaving(direction);
     window.setTimeout(() => {
-      handleChoice(direction === "right");
+      handleChoice(drink, direction === "right");
+      setCardLeaving(null);
+      setDragDrinkId(null);
+      setDragOffset({ x: 0, y: 0 });
+      goToIndex(activeIndex + 1);
     }, 180);
   }
 
-  function startDrag(x: number, y: number) {
+  function startDrag(drinkId: string, x: number, y: number) {
     setDragStart({ x, y });
+    setGestureMode(null);
+    setDragDrinkId(drinkId);
     setDragOffset({ x: 0, y: 0 });
   }
 
@@ -103,44 +132,71 @@ export function SwipePage({
       return;
     }
 
+    const deltaX = x - dragStart.x;
+    const deltaY = y - dragStart.y;
+
+    if (!gestureMode) {
+      const atTop = (feedRef.current?.scrollTop ?? 0) <= 0;
+      if (atTop && Math.abs(deltaY) > Math.abs(deltaX) && deltaY > 0) {
+        setGestureMode("sheet");
+      } else if (Math.abs(deltaX) > 12) {
+        setGestureMode("card");
+      } else {
+        return;
+      }
+    }
+
+    if (gestureMode === "sheet") {
+      setSheetOffsetY(Math.max(0, deltaY));
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
+
     setDragOffset({
-      x: x - dragStart.x,
-      y: y - dragStart.y,
+      x: deltaX,
+      y: deltaY * 0.16,
     });
+    setSheetOffsetY(0);
   }
 
   function finishDrag(x: number, y: number) {
-    if (!dragStart) {
+    if (!dragStart || !activeDrink) {
       return;
     }
 
     const deltaX = x - dragStart.x;
     const deltaY = y - dragStart.y;
 
-    if (deltaY > 120 && Math.abs(deltaX) < 70) {
+    if (gestureMode === "sheet") {
       setDragStart(null);
-      setDragOffset({ x: 0, y: 0 });
-      onClose();
-      return;
-    }
-
-    if (deltaX > 90) {
-      setDragStart(null);
-      advanceCard("right");
-      return;
-    }
-
-    if (deltaX < -90) {
-      setDragStart(null);
-      advanceCard("left");
+      setGestureMode(null);
+      if (deltaY > 120) {
+        setSheetOffsetY(0);
+        onClose();
+        return;
+      }
+      setSheetOffsetY(0);
       return;
     }
 
     setDragStart(null);
+    setGestureMode(null);
+
+    if (deltaX > 90) {
+      advanceCard(activeDrink, "right");
+      return;
+    }
+
+    if (deltaX < -90) {
+      advanceCard(activeDrink, "left");
+      return;
+    }
+
     setDragOffset({ x: 0, y: 0 });
+    setDragDrinkId(null);
   }
 
-  function handleTouchStart(event: TouchEvent<HTMLElement>) {
+  function handleTouchStart(drink: Drink, event: TouchEvent<HTMLElement>) {
     const touch = event.changedTouches[0];
     if (!touch) {
       return;
@@ -148,10 +204,10 @@ export function SwipePage({
 
     const now = Date.now();
     if (now - lastTapRef.current < 260) {
-      handleLike();
+      handleLike(drink);
     }
     lastTapRef.current = now;
-    startDrag(touch.clientX, touch.clientY);
+    startDrag(drink.id, touch.clientX, touch.clientY);
   }
 
   function handleTouchMove(event: TouchEvent<HTMLElement>) {
@@ -168,8 +224,8 @@ export function SwipePage({
     }
   }
 
-  function handleMouseDown(event: MouseEvent<HTMLElement>) {
-    startDrag(event.clientX, event.clientY);
+  function handleMouseDown(drink: Drink, event: MouseEvent<HTMLElement>) {
+    startDrag(drink.id, event.clientX, event.clientY);
   }
 
   function handleMouseMove(event: MouseEvent<HTMLElement>) {
@@ -184,44 +240,30 @@ export function SwipePage({
     }
   }
 
-  if (!drink) {
-    return (
-      <div className="swipe-overlay">
-        <div className="swipe-backdrop" onClick={onClose} />
-        <div className="swipe-modal swipe-modal-complete">
-          <button
-            className="swipe-close-button"
-            onClick={onClose}
-            aria-label="Close swipe drinks"
-          >
-            ×
-          </button>
-          <div className="page empty-state-page">
-            <h1>Swipe complete</h1>
-            <p>You have gone through the current mock lineup.</p>
-            <div className="tried-summary">
-              <strong>{triedDrinks.length}</strong>
-              <span>drinks saved in your history</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  function handleFeedScroll() {
+    const container = feedRef.current;
+    if (!container) {
+      return;
+    }
+
+    const nextIndex = Math.round(container.scrollTop / container.clientHeight);
+    setActiveIndex(Math.max(0, Math.min(nextIndex, candidates.length - 1)));
   }
 
-  const rotation = dragOffset.x / 14;
-  const decisionLabel =
-    dragOffset.x > 28 ? "TRIED" : dragOffset.x < -28 ? "NOT YET" : "";
+  if (!candidates.length) {
+    return null;
+  }
 
   return (
     <div className="swipe-overlay">
-      <div className="swipe-backdrop" onClick={onClose} />
-      <section className="swipe-modal">
-        <div className="swipe-sheet-handle" />
+      <section
+        className="swipe-modal swipe-feed-shell"
+        style={{ transform: `translateY(${sheetOffsetY}px)` }}
+      >
         <header className="swipe-modal-header">
           <div>
-            <p className="eyebrow">Swipe Drinks</p>
-            <h1>Tonight&apos;s quick pick</h1>
+            <p className="eyebrow">Adichitundo?</p>
+            <h1>Discover drinks fast</h1>
           </div>
           <button
             className="swipe-close-button"
@@ -232,101 +274,139 @@ export function SwipePage({
           </button>
         </header>
 
-        <p className="hero-copy swipe-intro-copy">
-          Swipe right if you&apos;ve already had it, left if not. Double tap to
-          like it for future recommendations.
-        </p>
+        <div className="swipe-feed" ref={feedRef} onScroll={handleFeedScroll}>
+          {candidates.map((drink, index) => {
+            const isActive = index === activeIndex;
+            const isDragged = dragDrinkId === drink.id;
+            const isTried = triedDrinks.includes(drink.id);
+            const isLiked = likedDrinks.includes(drink.id);
+            const rotation = isDragged ? dragOffset.x / 14 : 0;
+            const decisionLabel =
+              isDragged && dragOffset.x > 28
+                ? "TRIED"
+                : isDragged && dragOffset.x < -28
+                  ? "NOT YET"
+                  : "";
 
-        <section
-          className={
-            cardLeaving === "left"
-              ? "swipe-card swipe-card-leaving-left"
-              : cardLeaving === "right"
-                ? "swipe-card swipe-card-leaving-right"
-                : "swipe-card"
-          }
-          style={{
-            transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`,
-          }}
-          onDoubleClick={handleLike}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          {decisionLabel ? (
-            <div
-              className={
-                decisionLabel === "TRIED"
-                  ? "swipe-decision-badge tried"
-                  : "swipe-decision-badge skipped"
-              }
-            >
-              {decisionLabel}
-            </div>
-          ) : null}
-          {likeBurst ? <div className="like-burst">♥</div> : null}
-          <button
-            className={likedPulse || isLiked ? "swipe-like-button liked" : "swipe-like-button"}
-            onClick={handleLike}
-            aria-label={isLiked ? "Unlike this drink" : "Like this drink"}
-          >
-            ♥
-          </button>
-          <div className="swipe-card-progress">
-            <span>{index + 1}</span>
-            <small>/ {candidates.length}</small>
-          </div>
-          <div className="swipe-card-grabber" />
-          <div className="swipe-card-media">
-            <DrinkArtwork drink={drink} />
-          </div>
-          <div className="swipe-body">
-            <div className="title-row">
-              <h2>{drink.name}</h2>
-              <span className="rating-pill">{drink.rating.toFixed(1)}</span>
-            </div>
-            <p className="muted-line">
-              {drink.category} • ₹{drink.price}
-            </p>
-            <p>{drink.description}</p>
-            <div className="swipe-tag-row">
-              {drink.tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="tag-pill">
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="swipe-status-row">
-              <span className={isTried ? "status-pill active" : "status-pill"}>
-                {isTried ? "Already tried" : "Not marked tried"}
-              </span>
-              <span className={isLiked ? "status-pill active" : "status-pill"}>
-                {isLiked ? "Liked" : "Double tap to like"}
-              </span>
-            </div>
-          </div>
-        </section>
+            return (
+              <article key={drink.id} className="swipe-feed-item">
+                <section
+                  className={
+                    cardLeaving === "left" && isDragged
+                      ? "swipe-card swipe-card-leaving-left"
+                      : cardLeaving === "right" && isDragged
+                        ? "swipe-card swipe-card-leaving-right"
+                        : "swipe-card"
+                  }
+                  style={{
+                    transform: isDragged
+                      ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg)`
+                      : undefined,
+                  }}
+                  onDoubleClick={() => handleLike(drink)}
+                  onTouchStart={(event) => handleTouchStart(drink, event)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onMouseDown={(event) => handleMouseDown(drink, event)}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
+                  <div className="swipe-card-gradient" />
+                  {decisionLabel ? (
+                    <div
+                      className={
+                        decisionLabel === "TRIED"
+                          ? "swipe-decision-badge tried"
+                          : "swipe-decision-badge skipped"
+                      }
+                    >
+                      {decisionLabel}
+                    </div>
+                  ) : null}
+                  {likeBurstId === drink.id ? <div className="like-burst">♥</div> : null}
+                  <button
+                    className={
+                      likedPulseId === drink.id || isLiked
+                        ? "swipe-like-button liked"
+                        : "swipe-like-button"
+                    }
+                    onClick={() => handleLike(drink)}
+                    aria-label={isLiked ? "Unlike this drink" : "Like this drink"}
+                  >
+                    ♥
+                  </button>
+                  <div className="swipe-card-progress">
+                    <span>{index + 1}</span>
+                    <small>/ {candidates.length}</small>
+                  </div>
+                  <div className="swipe-card-media">
+                    <DrinkArtwork drink={drink} />
+                  </div>
+                  <div className="swipe-body">
+                    {isActive ? (
+                      <p className="hero-copy swipe-intro-copy">
+                        Swipe right if you&apos;ve already had it, left if not.
+                        Double tap to like it. Scroll for the next drink.
+                      </p>
+                    ) : null}
+                    <div className="title-row">
+                      <h2>{drink.name}</h2>
+                      <span className="rating-pill">{drink.rating.toFixed(1)}</span>
+                    </div>
+                    <p className="muted-line">
+                      {drink.category} • ₹{drink.price}
+                    </p>
+                    <p>{drink.description}</p>
+                    <div className="swipe-tag-row">
+                      {drink.tags.slice(0, 3).map((tag) => (
+                        <span key={tag} className="tag-pill">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="swipe-status-row">
+                      <span className={isTried ? "status-pill active" : "status-pill"}>
+                        {isTried ? "Already in profile" : "Swipe right to save"}
+                      </span>
+                      <span className={isLiked ? "status-pill active" : "status-pill"}>
+                        {isLiked ? "Liked" : "Double tap to like"}
+                      </span>
+                    </div>
+                    <div className="swipe-actions">
+                      <button
+                        className="secondary-button danger-button"
+                        onClick={() => advanceCard(drink, "left")}
+                      >
+                        Not Tried
+                      </button>
+                      <button
+                        className="primary-button"
+                        onClick={() => advanceCard(drink, "right")}
+                      >
+                        Tried
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </article>
+            );
+          })}
+        </div>
 
-        <section className="swipe-actions">
-          <button
-            className="secondary-button danger-button"
-            onClick={() => advanceCard("left")}
-          >
-            Not Tried
-          </button>
-          <button className="primary-button" onClick={() => advanceCard("right")}>
-            Tried
-          </button>
-        </section>
+        {showRatePrompt ? (
+          <div className="rate-later-card feed-rate-card">
+            <div>
+              <strong>{lastTriedName}</strong>
+              <p>Add a quick rating later to sharpen your recommendations.</p>
+            </div>
+            <button className="ghost-button" onClick={() => setShowRatePrompt(false)}>
+              Later
+            </button>
+          </div>
+        ) : null}
 
-        <p className="swipe-hint">
-          Swipe down to close • Swipe left to skip • Swipe right to mark tried
-        </p>
-        {feedback ? <div className="feedback-banner">{feedback}</div> : null}
+        {feedback ? <div className="feedback-banner feed-feedback">{feedback}</div> : null}
       </section>
     </div>
   );

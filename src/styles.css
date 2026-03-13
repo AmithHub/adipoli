@@ -581,44 +581,23 @@ h3 {
   position: fixed;
   inset: 0;
   z-index: 40;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  padding: 16px 16px 0;
-}
-
-.swipe-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 4, 6, 0.72);
-  backdrop-filter: blur(10px);
+  background: #09090b;
+  overflow: hidden;
 }
 
 .swipe-modal {
   position: relative;
-  width: min(100%, 480px);
-  max-height: calc(100vh - 24px);
-  overflow-y: auto;
-  border-radius: 28px 28px 0 0;
-  padding: 12px 16px calc(104px + env(safe-area-inset-bottom));
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  border-radius: 0;
+  padding: max(14px, env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom));
   background:
-    radial-gradient(circle at top, rgba(247, 200, 101, 0.12), transparent 32%),
-    linear-gradient(180deg, rgba(32, 32, 35, 0.98), rgba(15, 15, 17, 0.98));
-  border: 1px solid var(--line);
-  box-shadow: 0 -12px 50px rgba(0, 0, 0, 0.38);
+    radial-gradient(circle at top, rgba(247, 200, 101, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(18, 18, 20, 0.98), rgba(8, 8, 10, 1));
+  transition: transform 180ms ease;
   animation: swipe-sheet-in 240ms ease;
-}
-
-.swipe-modal-complete {
-  min-height: 52vh;
-}
-
-.swipe-sheet-handle {
-  width: 52px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  margin: 0 auto 14px;
 }
 
 .swipe-modal-header {
@@ -626,7 +605,9 @@ h3 {
   align-items: start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  position: relative;
+  z-index: 4;
+  margin-bottom: 12px;
 }
 
 .swipe-close-button {
@@ -642,24 +623,56 @@ h3 {
 }
 
 .swipe-intro-copy {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
+  color: rgba(255, 246, 228, 0.82);
+}
+
+.swipe-feed-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.swipe-feed {
+  flex: 1;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.swipe-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.swipe-feed-item {
+  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  scroll-snap-align: start;
+  display: flex;
 }
 
 .swipe-card {
   position: relative;
+  flex: 1;
+  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: hidden;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 211, 135, 0.16);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
-    rgba(28, 28, 30, 0.92);
+  border-radius: 24px;
+  background: #0f0f11;
+  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.42);
   transition: transform 180ms ease, box-shadow 180ms ease;
   user-select: none;
   touch-action: pan-y;
 }
 
+.swipe-card-gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, transparent 24%, rgba(0, 0, 0, 0.54) 66%, rgba(0, 0, 0, 0.9) 100%);
+  pointer-events: none;
+}
+
 .swipe-card-media .drink-artwork {
-  min-height: 260px;
+  min-height: calc(100vh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 .swipe-card-progress {
@@ -685,14 +698,7 @@ h3 {
 }
 
 .swipe-card-grabber {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 44px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  transform: translateX(-50%);
+  display: none;
 }
 
 .swipe-like-button {
@@ -788,11 +794,71 @@ h3 {
 .swipe-actions {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .swipe-actions button {
   flex: 1;
+}
+
+.rate-later-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(247, 200, 101, 0.12), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 211, 135, 0.16);
+}
+
+.rate-later-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rate-later-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.feed-rate-card {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 5;
+}
+
+.feed-feedback {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 5;
+}
+
+.swipe-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 24px 18px 22px;
+  color: #fff6e4;
+}
+
+.swipe-body h2 {
+  font-size: 1.55rem;
+}
+
+.swipe-body .muted-line,
+.swipe-body p {
+  color: rgba(255, 246, 228, 0.84);
 }
 
 @keyframes like-pop {
@@ -884,18 +950,6 @@ h3 {
 
   .page {
     gap: 24px;
-  }
-
-  .swipe-overlay {
-    align-items: center;
-    padding: 24px;
-  }
-
-  .swipe-modal {
-    width: min(100%, 520px);
-    max-height: min(92vh, 900px);
-    border-radius: 28px;
-    padding-bottom: 28px;
   }
 
   .age-warning-ring {
